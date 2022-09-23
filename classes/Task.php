@@ -1,17 +1,19 @@
 <?php
 
+namespace taskforce;
+
 class Task 
 {
-    private const STATUS_NEW = 'new';             // новое
-    private const STATUS_СANCELLED = 'cancelled'; // отменено
-    private const STATUS_WORK = 'work';           // в работе
-    private const STATUS_DONE = 'done';           // выполнено
-    private const STATUS_FAILED = 'Failed';       // провалено
+    const STATUS_NEW = 'new';             // новое
+    const STATUS_СANCELLED = 'cancelled'; // отменено
+    const STATUS_WORK = 'work';           // в работе
+    const STATUS_DONE = 'done';           // выполнено
+    const STATUS_FAILED = 'Failed';       // провалено
 
-    private const ACTION_CANCEL = 'cancel';       // отменить
-    private const ACTION_RESPOND = 'respond';     // откликнуться
-    private const ACTION_DONE = 'done';           // выполнено
-    private const ACTION_REFUSE = 'refuse';       // отказаться
+    const ACTION_CANCEL = 'cancel';       // отменить
+    const ACTION_RESPOND = 'respond';     // откликнуться
+    const ACTION_DONE = 'done';           // выполнено
+    const ACTION_REFUSE = 'refuse';       // отказаться
 
     private ?int $contractorId;    // исполнитель
     private int $customerId;       // заказчик
@@ -31,7 +33,7 @@ class Task
     /** 
      * Возвращает карту статусов
      * 
-     * @return string[]  
+     * @return array  
      */ 
     public function getMapStatus(): array
     {
@@ -47,7 +49,7 @@ class Task
     /**
      * Возвращает карту действий
      * 
-     * @return string[]  
+     * @return array  
      */ 
     public function getMapAction(): array
     {
