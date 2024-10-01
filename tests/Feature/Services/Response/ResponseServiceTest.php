@@ -1,28 +1,25 @@
 <?php
 
-namespace Tests\Feature\Actions\Task;
+namespace Feature\Services\Response;
 
-use App\Actions\Task\RefuseTaskAction;
 use App\Exception\AppDomainException;
 use App\Models\Response;
 use App\Models\Role;
 use App\Models\Status;
 use App\Models\Task;
 use App\Models\User;
-use Illuminate\Contracts\Container\BindingResolutionException;
+use App\Services\Response\DTO\AcceptResponseDTO;
+use App\Services\Response\DTO\RejectResponseDTO;
+use App\Services\Response\ResponseService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Auth;
-use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
-class RefuseTaskActionTest extends TestCase
+class ResponseServiceTest extends TestCase
 {
     use DatabaseTransactions;
 
-    /**
-     * @throws BindingResolutionException
-     */
-    public function test_action_positive()
+    public function test_accept_response_positive()
     {
         /** @var User $userCustomer */
         $userCustomer = User::factory()->create([
@@ -34,46 +31,8 @@ class RefuseTaskActionTest extends TestCase
         ]);
         /** @var Task $task */
         $task = Task::factory()->create([
-            'status_id' => Status::query()->where('name', '=', Status::IN_PROGRESS)->first()->id,
+            'status_id' => Status::query()->where('name', '=', Status::NEW)->first()->id,
             'customer_id' => $userCustomer->id,
-            'executor_id' => $userExecutor->id,
-        ]);
-        /** @var Response $response */
-        $response = Response::factory()->create([
-            'executor_id' => $userExecutor->id,
-            'task_id' => $task->id,
-        ]);
-
-        Auth::setUser($userExecutor);
-        $action = app()->make(RefuseTaskAction::class);
-        $action($task);
-
-        $this->assertEquals(Status::FAILED, $task->status->name);
-        $this->assertEquals(1, $userExecutor->cnt_failed_tasks);
-        $response->refresh();
-        $this->assertEquals(0, $response->active);
-    }
-
-    /**
-     * @throws BindingResolutionException
-     */
-    public function test_action_negative_1()
-    {
-        $this->expectException(HttpException::class);
-
-        /** @var User $userCustomer */
-        $userCustomer = User::factory()->create([
-            'role_id' => Role::query()->where('name', '=', Role::CUSTOMER)->first()->id
-        ]);
-        /** @var User $userExecutor */
-        $userExecutor = User::factory()->create([
-            'role_id' => Role::query()->where('name', '=', Role::EXECUTOR)->first()->id
-        ]);
-        /** @var Task $task */
-        $task = Task::factory()->create([
-            'status_id' => Status::query()->where('name', '=', Status::IN_PROGRESS)->first()->id,
-            'customer_id' => $userCustomer->id,
-            'executor_id' => $userExecutor->id,
         ]);
         /** @var Response $response */
         $response = Response::factory()->create([
@@ -82,14 +41,18 @@ class RefuseTaskActionTest extends TestCase
         ]);
 
         Auth::setUser($userCustomer);
-        $action = app()->make(RefuseTaskAction::class);
-        $action($task);
+        /** @var ResponseService $service */
+        $service = app()->get(ResponseService::class);
+        $service->accept(new AcceptResponseDTO(
+            $task,
+            $userExecutor->id
+        ));
+
+        $this->assertEquals($userExecutor->id, $task->executor->id);
+        $this->assertEquals(Status::IN_PROGRESS, $task->status->name);
     }
 
-    /**
-     * @throws BindingResolutionException
-     */
-    public function test_action_negative_2()
+    public function test_accept_response_negative()
     {
         $this->expectException(AppDomainException::class);
 
@@ -103,9 +66,8 @@ class RefuseTaskActionTest extends TestCase
         ]);
         /** @var Task $task */
         $task = Task::factory()->create([
-            'status_id' => Status::query()->where('name', '=', Status::DONE)->first()->id,
+            'status_id' => Status::query()->where('name', '=', Status::IN_PROGRESS)->first()->id,
             'customer_id' => $userCustomer->id,
-            'executor_id' => $userExecutor->id,
         ]);
         /** @var Response $response */
         $response = Response::factory()->create([
@@ -113,17 +75,52 @@ class RefuseTaskActionTest extends TestCase
             'task_id' => $task->id,
         ]);
 
-        Auth::setUser($userExecutor);
-        $action = app()->make(RefuseTaskAction::class);
-        $action($task);
+        Auth::setUser($userCustomer);
+        /** @var ResponseService $service */
+        $service = app()->get(ResponseService::class);
+        $service->accept(new AcceptResponseDTO(
+            $task,
+            $userExecutor->id
+        ));
     }
 
-    /**
-     * @throws BindingResolutionException
-     */
-    public function test_action_negative_3()
+    public function test_reject_response_positive()
     {
-        $this->expectException(HttpException::class);
+        /** @var User $userCustomer */
+        $userCustomer = User::factory()->create([
+            'role_id' => Role::query()->where('name', '=', Role::CUSTOMER)->first()->id
+        ]);
+        /** @var User $userExecutor */
+        $userExecutor = User::factory()->create([
+            'role_id' => Role::query()->where('name', '=', Role::EXECUTOR)->first()->id
+        ]);
+        /** @var Task $task */
+        $task = Task::factory()->create([
+            'status_id' => Status::query()->where('name', '=', Status::NEW)->first()->id,
+            'customer_id' => $userCustomer->id,
+        ]);
+        /** @var Response $response */
+        $response = Response::factory()->create([
+            'executor_id' => $userExecutor->id,
+            'task_id' => $task->id,
+        ]);
+
+        Auth::setUser($userCustomer);
+        /** @var ResponseService $service */
+        $service = app()->get(ResponseService::class);
+        $service->reject(new RejectResponseDTO(
+            $task,
+            $response
+        ));
+
+        $this->assertEquals(null, $task->executor);
+        $this->assertEquals(Status::NEW, $task->status->name);
+        $this->assertEquals(0, $response->active);
+    }
+
+    public function test_reject_response_negative()
+    {
+        $this->expectException(AppDomainException::class);
 
         /** @var User $userCustomer */
         $userCustomer = User::factory()->create([
@@ -139,18 +136,22 @@ class RefuseTaskActionTest extends TestCase
         ]);
         /** @var Task $task */
         $task = Task::factory()->create([
-            'status_id' => Status::query()->where('name', '=', Status::IN_PROGRESS)->first()->id,
+            'status_id' => Status::query()->where('name', '=', Status::DONE)->first()->id,
             'customer_id' => $userCustomer->id,
-            'executor_id' => $userExecutor->id,
+            'executor_id' => $userExecutor2->id,
         ]);
         /** @var Response $response */
         $response = Response::factory()->create([
-            'executor_id' => $userExecutor->id,
+            'executor_id' => $userExecutor2->id,
             'task_id' => $task->id,
         ]);
 
-        Auth::setUser($userExecutor2);
-        $action = app()->make(RefuseTaskAction::class);
-        $action($task);
+        Auth::setUser($userCustomer);
+        /** @var ResponseService $service */
+        $service = app()->get(ResponseService::class);
+        $service->reject(new RejectResponseDTO(
+            $task,
+            $response
+        ));
     }
 }

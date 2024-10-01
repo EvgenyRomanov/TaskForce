@@ -13,7 +13,6 @@ use App\Repository\DTO\NewTaskRepositoryDTO;
 use App\Repository\TaskRepository;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Auth;
 use Tests\TestCase;
 
 class TaskRepositoryTest extends TestCase

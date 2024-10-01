@@ -2,15 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Auth\IsCustomerAction;
-use App\Actions\Task\CancelTaskAction;
-use App\Actions\Task\CompleteTaskAction;
-use App\Actions\Task\DTO\CompleteTaskActionDTO;
-use App\Actions\Task\DTO\RespondTaskActionDTO;
-use App\Actions\Task\RefuseTaskAction;
-use App\Actions\Task\RespondTaskAction;
 use App\Http\Requests\Task\CancelTaskRequest;
 use App\Http\Requests\Task\CompleteTaskRequest;
+use App\Http\Requests\Task\CreateTaskRequest;
 use App\Http\Requests\Task\MyTasksRequest;
 use App\Http\Requests\Task\RefuseTaskRequest;
 use App\Http\Requests\Task\RespondTaskRequest;
@@ -21,9 +15,11 @@ use App\Models\User;
 use App\Repository\DTO\MyTaskRepositoryDTO;
 use App\Repository\DTO\NewTaskRepositoryDTO;
 use App\Repository\TaskRepository;
+use App\Services\Task\DTO\CompleteTaskDTO;
 use App\Services\Task\DTO\CreateTaskDTO;
+use App\Services\Task\DTO\RefuseTaskDTO;
+use App\Services\Task\DTO\RespondTaskDTO;
 use App\Services\Task\TaskService;
-use Illuminate\Auth\AuthManager;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -62,8 +58,6 @@ class TaskController extends Controller
     public function myTasks(MyTasksRequest $request, TaskRepository $taskRepository): View
     {
         $user = $request->user();
-        if (! $user) abort(401);
-
         $taskRepositoryDTO = new MyTaskRepositoryDTO(
             user: $user,
             status: $request->get('status')
@@ -76,10 +70,9 @@ class TaskController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(IsCustomerAction $isCustomerAction, AuthManager $authManager): View
+    public function create(CreateTaskRequest $request): View
     {
-        $isCustomerAction($authManager);
-        $user = $authManager->user();
+        $user = $request->user();
         $categories = Category::all();
 
         return view('components.task.create', compact('user', 'categories'));
@@ -91,13 +84,10 @@ class TaskController extends Controller
     public function store(
         StoreTaskRequest $request,
         TaskService $taskService,
-        AuthManager $authManager,
-        IsCustomerAction $isCustomerAction
     ): RedirectResponse {
-        $isCustomerAction($authManager);
         $data = $request->all();
         /** @var User $user */
-        $user = $authManager->user();
+        $user = $request->user();
 
         $createTaskDTO = new CreateTaskDTO(
             title: $data['title'],
@@ -117,49 +107,51 @@ class TaskController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Task $task, AuthManager $authManager): View
+    public function show(Request $request, Task $task): View
     {
-        /** @var User $user */
-        $user = $authManager->user();
-
-        if (is_null($user)) {
-            abort(401);
-        }
-
+        $user = $request->user();
         return view('components.task.show', compact('task', 'user'));
     }
 
-    public function cancel(CancelTaskRequest $request, Task $task, CancelTaskAction $cancelTaskAction): RedirectResponse
+    public function cancel(CancelTaskRequest $request, Task $task, TaskService $taskService): RedirectResponse
     {
-        $cancelTaskAction($task);
+        $taskService->cancel($task);
         return Redirect::route('tasks.show', $task->id);
     }
 
-    public function respond(RespondTaskRequest $request, Task $task, RespondTaskAction $respondTaskAction): RedirectResponse
+    public function respond(RespondTaskRequest $request, Task $task, TaskService $taskService): RedirectResponse
     {
-        $respondTaskActionDTO = new RespondTaskActionDTO(
+        $respondTaskActionDTO = new RespondTaskDTO(
             task: $task,
+            executor: $request->user(),
             comment: $request->get('comment'),
             budget: $request->get('budget'),
         );
-        $respondTaskAction($respondTaskActionDTO);
+        $taskService->respond($respondTaskActionDTO);
+
         return Redirect::route('tasks.show', $task->id);
     }
 
-    public function refuse(RefuseTaskRequest $request, Task $task, RefuseTaskAction $refuseTaskAction): RedirectResponse
+    public function refuse(RefuseTaskRequest $request, Task $task, TaskService $taskService): RedirectResponse
     {
-        $refuseTaskAction($task);
-        return Redirect::route('tasks.show', $task->id);
-    }
-
-    public function complete(CompleteTaskRequest $request, Task $task, CompleteTaskAction $completeTaskAction): RedirectResponse
-    {
-        $completeTaskActionDTO = new CompleteTaskActionDTO(
+        $refuseTaskDTO = new RefuseTaskDTO(
             task: $task,
+            executor: $request->user(),
+        );
+        $taskService->refuse($refuseTaskDTO);
+
+        return Redirect::route('tasks.show', $task->id);
+    }
+
+    public function complete(CompleteTaskRequest $request, Task $task, TaskService $taskService): RedirectResponse
+    {
+        $completeTaskActionDTO = new CompleteTaskDTO(
+            task: $task,
+            customer: $request->user(),
             rating: $request->get('rating'),
             comment: $request->get('comment'),
         );
-        $completeTaskAction($completeTaskActionDTO);
+        $taskService->complete($completeTaskActionDTO);
 
         return Redirect::route('tasks.show', $task->id);
     }

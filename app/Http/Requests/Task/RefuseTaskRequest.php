@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Task;
 
+use App\Models\Role;
 use App\Services\Task\Interface\AllowedActionsOnTask;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -13,7 +14,7 @@ class RefuseTaskRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->role->name === Role::EXECUTOR;
     }
 
     /**

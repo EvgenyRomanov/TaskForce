@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Rating\PlaceInRankingAction;
 use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Models\Category;
 use App\Models\CategoryUser;
 use App\Models\User;
+use App\Services\Rating\PlaceInRankingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -59,11 +59,11 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit');
     }
 
-    public function display(Request $request, PlaceInRankingAction $rankingAction, ?User $user = null): View
+    public function display(Request $request, PlaceInRankingService $rankingService, ?User $user = null): View
     {
         $user = $user ?? $request->user();
         if ($user->isCustomer()) abort(404);
-        $ratingExecutors = $rankingAction($user->id);
+        $ratingExecutors = $rankingService($user->id);
 
         return view('components.user.profile', [
             'user' => $user,

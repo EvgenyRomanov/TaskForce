@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions\Response\DTO;
+namespace App\Services\Response\DTO;
 
 use App\Models\Response;
 use App\Models\Task;

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Actions\Rating;
+namespace App\Services\Rating;
 
 use Illuminate\Support\Facades\DB;
 
-class PlaceInRankingAction
+class PlaceInRankingService
 {
     public function __invoke(int $userId): ?int
     {

@@ -113,6 +113,7 @@
 ---
 ```sh
 artisan migrate
+npm install
 npm run build
 artisan storage:link
 ```

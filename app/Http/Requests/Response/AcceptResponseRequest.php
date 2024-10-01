@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Task;
+namespace App\Http\Requests\Response;
 
 use App\Models\Role;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreTaskRequest extends FormRequest
+class AcceptResponseRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,13 +22,6 @@ class StoreTaskRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'title' => 'required',
-            'description' => 'required',
-            'files' => 'max:2',
-            'category' => 'required|exists:categories,name',
-            'budget' => 'integer|nullable',
-            'deadline' => 'nullable|date|after:current|date_format:Y-m-d',
-        ];
+        return [];
     }
 }

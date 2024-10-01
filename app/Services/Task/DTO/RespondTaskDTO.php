@@ -1,13 +1,15 @@
 <?php
 
-namespace App\Actions\Task\DTO;
+namespace App\Services\Task\DTO;
 
 use App\Models\Task;
+use App\Models\User;
 
-readonly class RespondTaskActionDTO
+readonly class RespondTaskDTO
 {
     public function __construct(
         public Task $task,
+        public User $executor,
         public ?string $comment = null,
         public ?int $budget = null
     ) {
