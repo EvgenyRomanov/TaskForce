@@ -1,4 +1,4 @@
-<x-layout.layout :user="$user">
+<x-layout.layout :user="$layout_user">
     <x-slot name="title">
         {{ __('profile.title') }}
     </x-slot>

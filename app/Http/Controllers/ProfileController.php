@@ -67,6 +67,7 @@ class ProfileController extends Controller
 
         return view('components.user.profile', [
             'user' => $user,
+            'layout_user' => $request->user(),
             'ratingExecutors' => $ratingExecutors
         ]);
     }
